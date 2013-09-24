@@ -4,7 +4,7 @@ require 'ffi'
 
 module LLVM
   extend FFI::Library
-  ffi_lib 'LLVM-3.0'
+  ffi_lib "LLVM-3.4"
   
   # (Not documented)
   # 
@@ -117,6 +117,14 @@ module LLVM
   # @return [nil] 
   # @scope class
   attach_function :add_mem_cpy_opt_pass, :LLVMAddMemCpyOptPass, [:pointer], :void
+  
+  # See llvm::createPartiallyInlineLibCallsPass function.
+  # 
+  # @method add_partially_inline_lib_calls_pass(pm)
+  # @param [FFI::Pointer(PassManagerRef)] pm 
+  # @return [nil] 
+  # @scope class
+  attach_function :add_partially_inline_lib_calls_pass, :LLVMAddPartiallyInlineLibCallsPass, [:pointer], :void
   
   # See llvm::createPromoteMemoryToRegisterPass function.
   # 

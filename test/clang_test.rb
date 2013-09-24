@@ -7,6 +7,6 @@ run_test(
   prefixes:      ["clang_", "CX"],
   blacklist:     ["clang_getExpansionLocation"],
   file_mappings: {
-    "clang-c/Index.h" => "index.rb"
+    ["clang-c/Index.h", "clang-c/CXString.h"] => "index.rb"
   }
 )

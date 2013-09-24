@@ -4,7 +4,7 @@ require 'ffi'
 
 module LLVM
   extend FFI::Library
-  ffi_lib 'LLVM-3.0'
+  ffi_lib "LLVM-3.4"
   
   # (Not documented)
   class OpaqueObjectFile < FFI::Struct
@@ -17,6 +17,16 @@ module LLVM
   end
   
   # (Not documented)
+  class OpaqueSymbolIterator < FFI::Struct
+    layout :dummy, :char
+  end
+  
+  # (Not documented)
+  class OpaqueRelocationIterator < FFI::Struct
+    layout :dummy, :char
+  end
+  
+  # // ObjectFile creation
   # 
   # @method create_object_file(mem_buf)
   # @param [FFI::Pointer(MemoryBufferRef)] mem_buf 
@@ -32,7 +42,7 @@ module LLVM
   # @scope class
   attach_function :dispose_object_file, :LLVMDisposeObjectFile, [OpaqueObjectFile], :void
   
-  # (Not documented)
+  # // ObjectFile Section iterators
   # 
   # @method get_sections(object_file)
   # @param [OpaqueObjectFile] object_file 
@@ -67,6 +77,48 @@ module LLVM
   
   # (Not documented)
   # 
+  # @method move_to_containing_section(sect, sym)
+  # @param [OpaqueSectionIterator] sect 
+  # @param [OpaqueSymbolIterator] sym 
+  # @return [nil] 
+  # @scope class
+  attach_function :move_to_containing_section, :LLVMMoveToContainingSection, [OpaqueSectionIterator, OpaqueSymbolIterator], :void
+  
+  # // ObjectFile Symbol iterators
+  # 
+  # @method get_symbols(object_file)
+  # @param [OpaqueObjectFile] object_file 
+  # @return [OpaqueSymbolIterator] 
+  # @scope class
+  attach_function :get_symbols, :LLVMGetSymbols, [OpaqueObjectFile], OpaqueSymbolIterator
+  
+  # (Not documented)
+  # 
+  # @method dispose_symbol_iterator(si)
+  # @param [OpaqueSymbolIterator] si 
+  # @return [nil] 
+  # @scope class
+  attach_function :dispose_symbol_iterator, :LLVMDisposeSymbolIterator, [OpaqueSymbolIterator], :void
+  
+  # (Not documented)
+  # 
+  # @method is_symbol_iterator_at_end(object_file, si)
+  # @param [OpaqueObjectFile] object_file 
+  # @param [OpaqueSymbolIterator] si 
+  # @return [Integer] 
+  # @scope class
+  attach_function :is_symbol_iterator_at_end, :LLVMIsSymbolIteratorAtEnd, [OpaqueObjectFile, OpaqueSymbolIterator], :int
+  
+  # (Not documented)
+  # 
+  # @method move_to_next_symbol(si)
+  # @param [OpaqueSymbolIterator] si 
+  # @return [nil] 
+  # @scope class
+  attach_function :move_to_next_symbol, :LLVMMoveToNextSymbol, [OpaqueSymbolIterator], :void
+  
+  # // SectionRef accessors
+  # 
   # @method get_section_name(si)
   # @param [OpaqueSectionIterator] si 
   # @return [String] 
@@ -79,7 +131,7 @@ module LLVM
   # @param [OpaqueSectionIterator] si 
   # @return [Integer] 
   # @scope class
-  attach_function :get_section_size, :LLVMGetSectionSize, [OpaqueSectionIterator], :ulong
+  attach_function :get_section_size, :LLVMGetSectionSize, [OpaqueSectionIterator], :ulong_long
   
   # (Not documented)
   # 
@@ -88,5 +140,135 @@ module LLVM
   # @return [String] 
   # @scope class
   attach_function :get_section_contents, :LLVMGetSectionContents, [OpaqueSectionIterator], :string
+  
+  # (Not documented)
+  # 
+  # @method get_section_address(si)
+  # @param [OpaqueSectionIterator] si 
+  # @return [Integer] 
+  # @scope class
+  attach_function :get_section_address, :LLVMGetSectionAddress, [OpaqueSectionIterator], :ulong_long
+  
+  # (Not documented)
+  # 
+  # @method get_section_contains_symbol(si, sym)
+  # @param [OpaqueSectionIterator] si 
+  # @param [OpaqueSymbolIterator] sym 
+  # @return [Integer] 
+  # @scope class
+  attach_function :get_section_contains_symbol, :LLVMGetSectionContainsSymbol, [OpaqueSectionIterator, OpaqueSymbolIterator], :int
+  
+  # // Section Relocation iterators
+  # 
+  # @method get_relocations(section)
+  # @param [OpaqueSectionIterator] section 
+  # @return [OpaqueRelocationIterator] 
+  # @scope class
+  attach_function :get_relocations, :LLVMGetRelocations, [OpaqueSectionIterator], OpaqueRelocationIterator
+  
+  # (Not documented)
+  # 
+  # @method dispose_relocation_iterator(ri)
+  # @param [OpaqueRelocationIterator] ri 
+  # @return [nil] 
+  # @scope class
+  attach_function :dispose_relocation_iterator, :LLVMDisposeRelocationIterator, [OpaqueRelocationIterator], :void
+  
+  # (Not documented)
+  # 
+  # @method is_relocation_iterator_at_end(section, ri)
+  # @param [OpaqueSectionIterator] section 
+  # @param [OpaqueRelocationIterator] ri 
+  # @return [Integer] 
+  # @scope class
+  attach_function :is_relocation_iterator_at_end, :LLVMIsRelocationIteratorAtEnd, [OpaqueSectionIterator, OpaqueRelocationIterator], :int
+  
+  # (Not documented)
+  # 
+  # @method move_to_next_relocation(ri)
+  # @param [OpaqueRelocationIterator] ri 
+  # @return [nil] 
+  # @scope class
+  attach_function :move_to_next_relocation, :LLVMMoveToNextRelocation, [OpaqueRelocationIterator], :void
+  
+  # // SymbolRef accessors
+  # 
+  # @method get_symbol_name(si)
+  # @param [OpaqueSymbolIterator] si 
+  # @return [String] 
+  # @scope class
+  attach_function :get_symbol_name, :LLVMGetSymbolName, [OpaqueSymbolIterator], :string
+  
+  # (Not documented)
+  # 
+  # @method get_symbol_address(si)
+  # @param [OpaqueSymbolIterator] si 
+  # @return [Integer] 
+  # @scope class
+  attach_function :get_symbol_address, :LLVMGetSymbolAddress, [OpaqueSymbolIterator], :ulong_long
+  
+  # (Not documented)
+  # 
+  # @method get_symbol_file_offset(si)
+  # @param [OpaqueSymbolIterator] si 
+  # @return [Integer] 
+  # @scope class
+  attach_function :get_symbol_file_offset, :LLVMGetSymbolFileOffset, [OpaqueSymbolIterator], :ulong_long
+  
+  # (Not documented)
+  # 
+  # @method get_symbol_size(si)
+  # @param [OpaqueSymbolIterator] si 
+  # @return [Integer] 
+  # @scope class
+  attach_function :get_symbol_size, :LLVMGetSymbolSize, [OpaqueSymbolIterator], :ulong_long
+  
+  # // RelocationRef accessors
+  # 
+  # @method get_relocation_address(ri)
+  # @param [OpaqueRelocationIterator] ri 
+  # @return [Integer] 
+  # @scope class
+  attach_function :get_relocation_address, :LLVMGetRelocationAddress, [OpaqueRelocationIterator], :ulong_long
+  
+  # (Not documented)
+  # 
+  # @method get_relocation_offset(ri)
+  # @param [OpaqueRelocationIterator] ri 
+  # @return [Integer] 
+  # @scope class
+  attach_function :get_relocation_offset, :LLVMGetRelocationOffset, [OpaqueRelocationIterator], :ulong_long
+  
+  # (Not documented)
+  # 
+  # @method get_relocation_symbol(ri)
+  # @param [OpaqueRelocationIterator] ri 
+  # @return [OpaqueSymbolIterator] 
+  # @scope class
+  attach_function :get_relocation_symbol, :LLVMGetRelocationSymbol, [OpaqueRelocationIterator], OpaqueSymbolIterator
+  
+  # (Not documented)
+  # 
+  # @method get_relocation_type(ri)
+  # @param [OpaqueRelocationIterator] ri 
+  # @return [Integer] 
+  # @scope class
+  attach_function :get_relocation_type, :LLVMGetRelocationType, [OpaqueRelocationIterator], :ulong_long
+  
+  # // following functions.
+  # 
+  # @method get_relocation_type_name(ri)
+  # @param [OpaqueRelocationIterator] ri 
+  # @return [String] 
+  # @scope class
+  attach_function :get_relocation_type_name, :LLVMGetRelocationTypeName, [OpaqueRelocationIterator], :string
+  
+  # (Not documented)
+  # 
+  # @method get_relocation_value_string(ri)
+  # @param [OpaqueRelocationIterator] ri 
+  # @return [String] 
+  # @scope class
+  attach_function :get_relocation_value_string, :LLVMGetRelocationValueString, [OpaqueRelocationIterator], :string
   
 end

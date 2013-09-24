@@ -4,7 +4,7 @@ require 'ffi'
 
 module LLVM
   extend FFI::Library
-  ffi_lib 'LLVM-3.0'
+  ffi_lib "LLVM-3.4"
   
   # (Not documented)
   # 
@@ -29,6 +29,22 @@ module LLVM
   # @return [nil] 
   # @scope class
   attach_function :initialize_scalar_opts, :LLVMInitializeScalarOpts, [:pointer], :void
+  
+  # (Not documented)
+  # 
+  # @method initialize_obj_carc_opts(r)
+  # @param [FFI::Pointer(PassRegistryRef)] r 
+  # @return [nil] 
+  # @scope class
+  attach_function :initialize_obj_carc_opts, :LLVMInitializeObjCARCOpts, [:pointer], :void
+  
+  # (Not documented)
+  # 
+  # @method initialize_vectorization(r)
+  # @param [FFI::Pointer(PassRegistryRef)] r 
+  # @return [nil] 
+  # @scope class
+  attach_function :initialize_vectorization, :LLVMInitializeVectorization, [:pointer], :void
   
   # (Not documented)
   # 

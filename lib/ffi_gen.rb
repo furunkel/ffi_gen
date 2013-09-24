@@ -231,7 +231,7 @@ class FFIGen
         writer.puts "attach_function :#{ruby_name}, :#{@name}, #{ffi_signature}", ""
       end
     end
-    
+
     def ruby_name
       @ruby_name ||= @generator.to_ruby_lowercase @name, true
     end
@@ -318,7 +318,12 @@ class FFIGen
     @output        = options.fetch :output, $stdout
     
     blacklist = @blacklist
-    @blacklist = lambda { |name| blacklist.include? name } if @blacklist.is_a? Array
+    @blacklist = lambda { |n| blacklist.include? n } if @blacklist.is_a? Array
+    @blacklist = lambda { |n| blacklist =~ n } if @blacklist.is_a? Regexp
+
+    blocking = @blocking
+    @blocking = lambda { |n| blocking.include? n } if @blocking.is_a? Array
+    @blocking = lambda { |n| blocking =~ n } if @blocking.is_a? Regexp
     
     @translation_unit = nil
     @declarations = nil
@@ -480,7 +485,7 @@ class FFIGen
       @declarations[Clang.get_cursor_type(declaration)] = struct
     
     when :function_decl
-      function = FunctionOrCallback.new self, name, false, @blocking.include?(name), comment
+      function = FunctionOrCallback.new self, name, false, @blocking[name], comment
       function.return_type = Clang.get_cursor_result_type declaration
       @declarations[declaration] = function
       
@@ -562,8 +567,14 @@ class FFIGen
     when :long_long       then [":long_long",  "Integer"]
     when :float           then [":float",      "Float"]
     when :double          then [":double",     "Float"]
-    when :pointer
-      pointee_type = Clang.get_pointee_type canonical_type
+    when :pointer, :incomplete_array
+      case canonical_type[:kind]
+      when :pointer
+        pointee_type = Clang.get_pointee_type canonical_type
+      when  :incomplete_array
+        pointee_type = Clang.get_array_element_type canonical_type
+      end
+
       result = nil
       case pointee_type[:kind]
       when :char_s
@@ -611,7 +622,7 @@ class FFIGen
       size = Clang.get_array_size canonical_type
       ["[#{element_type_data[:ffi_type]}, #{size}]", "Array<#{element_type_data[:description]}>"]
     else
-      raise NotImplementedError, "No translation for values of type #{canonical_type[:kind]}"
+      raise NotImplementedError, "No translation for values of type #{canonical_type[:kind]} (#{Clang.get_type_spelling(full_type).to_s_and_dispose})"
     end
     
     { ffi_type: data_array[0], description: data_array[1], parameter_name: to_ruby_lowercase(data_array[2] || data_array[1]) }

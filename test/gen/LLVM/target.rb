@@ -4,7 +4,7 @@ require 'ffi'
 
 module LLVM
   extend FFI::Library
-  ffi_lib 'LLVM-3.0'
+  ffi_lib "LLVM-3.4"
   
   # (Not documented)
   # 
@@ -39,8 +39,44 @@ module LLVM
     layout :dummy, :char
   end
   
+  # LLVMInitializeAllTargetMCs - The main program should call this function if
+  #     it wants access to all available target MC that LLVM is configured to
+  #     support.
+  # 
+  # @method initialize_all_target_m_cs()
+  # @return [nil] 
+  # @scope class
+  attach_function :initialize_all_target_m_cs, :LLVMInitializeAllTargetMCs, [], :void
+  
+  # LLVMInitializeAllAsmPrinters - The main program should call this function if
+  #     it wants all asm printers that LLVM is configured to support, to make them
+  #     available via the TargetRegistry.
+  # 
+  # @method initialize_all_asm_printers()
+  # @return [nil] 
+  # @scope class
+  attach_function :initialize_all_asm_printers, :LLVMInitializeAllAsmPrinters, [], :void
+  
+  # LLVMInitializeAllAsmParsers - The main program should call this function if
+  #     it wants all asm parsers that LLVM is configured to support, to make them
+  #     available via the TargetRegistry.
+  # 
+  # @method initialize_all_asm_parsers()
+  # @return [nil] 
+  # @scope class
+  attach_function :initialize_all_asm_parsers, :LLVMInitializeAllAsmParsers, [], :void
+  
+  # LLVMInitializeAllDisassemblers - The main program should call this function
+  #     if it wants all disassemblers that LLVM is configured to support, to make
+  #     them available via the TargetRegistry.
+  # 
+  # @method initialize_all_disassemblers()
+  # @return [nil] 
+  # @scope class
+  attach_function :initialize_all_disassemblers, :LLVMInitializeAllDisassemblers, [], :void
+  
   # Creates target data from a target layout string.
-  #     See the constructor llvm::TargetData::TargetData.
+  #     See the constructor llvm::DataLayout::DataLayout.
   # 
   # @method create_target_data(string_rep)
   # @param [String] string_rep 
@@ -72,7 +108,7 @@ module LLVM
   
   # Converts target data to a target layout string. The string must be disposed
   #     with LLVMDisposeMessage.
-  #     See the constructor llvm::TargetData::TargetData.
+  #     See the constructor llvm::DataLayout::DataLayout.
   # 
   # @method copy_string_rep_of_target_data(opaque_target_data)
   # @param [OpaqueTargetData] opaque_target_data 
@@ -82,7 +118,7 @@ module LLVM
   
   # Returns the byte order of a target, either LLVMBigEndian or
   #     LLVMLittleEndian.
-  #     See the method llvm::TargetData::isLittleEndian.
+  #     See the method llvm::DataLayout::isLittleEndian.
   # 
   # @method byte_order(opaque_target_data)
   # @param [OpaqueTargetData] opaque_target_data 
@@ -91,7 +127,7 @@ module LLVM
   attach_function :byte_order, :LLVMByteOrder, [OpaqueTargetData], :byte_ordering
   
   # Returns the pointer size in bytes for a target.
-  #     See the method llvm::TargetData::getPointerSize.
+  #     See the method llvm::DataLayout::getPointerSize.
   # 
   # @method pointer_size(opaque_target_data)
   # @param [OpaqueTargetData] opaque_target_data 
@@ -99,8 +135,19 @@ module LLVM
   # @scope class
   attach_function :pointer_size, :LLVMPointerSize, [OpaqueTargetData], :uint
   
+  # Returns the pointer size in bytes for a target for a specified
+  #     address space.
+  #     See the method llvm::DataLayout::getPointerSize.
+  # 
+  # @method pointer_size_for_as(opaque_target_data, as)
+  # @param [OpaqueTargetData] opaque_target_data 
+  # @param [Integer] as 
+  # @return [Integer] 
+  # @scope class
+  attach_function :pointer_size_for_as, :LLVMPointerSizeForAS, [OpaqueTargetData, :uint], :uint
+  
   # Returns the integer type that is the same size as a pointer on a target.
-  #     See the method llvm::TargetData::getIntPtrType.
+  #     See the method llvm::DataLayout::getIntPtrType.
   # 
   # @method int_ptr_type(opaque_target_data)
   # @param [OpaqueTargetData] opaque_target_data 
@@ -108,8 +155,19 @@ module LLVM
   # @scope class
   attach_function :int_ptr_type, :LLVMIntPtrType, [OpaqueTargetData], :pointer
   
+  # Returns the integer type that is the same size as a pointer on a target.
+  #     This version allows the address space to be specified.
+  #     See the method llvm::DataLayout::getIntPtrType.
+  # 
+  # @method int_ptr_type_for_as(opaque_target_data, as)
+  # @param [OpaqueTargetData] opaque_target_data 
+  # @param [Integer] as 
+  # @return [FFI::Pointer(TypeRef)] 
+  # @scope class
+  attach_function :int_ptr_type_for_as, :LLVMIntPtrTypeForAS, [OpaqueTargetData, :uint], :pointer
+  
   # Computes the size of a type in bytes for a target.
-  #     See the method llvm::TargetData::getTypeSizeInBits.
+  #     See the method llvm::DataLayout::getTypeSizeInBits.
   # 
   # @method size_of_type_in_bits(opaque_target_data, type_ref)
   # @param [OpaqueTargetData] opaque_target_data 
@@ -119,7 +177,7 @@ module LLVM
   attach_function :size_of_type_in_bits, :LLVMSizeOfTypeInBits, [OpaqueTargetData, :pointer], :ulong_long
   
   # Computes the storage size of a type in bytes for a target.
-  #     See the method llvm::TargetData::getTypeStoreSize.
+  #     See the method llvm::DataLayout::getTypeStoreSize.
   # 
   # @method store_size_of_type(opaque_target_data, type_ref)
   # @param [OpaqueTargetData] opaque_target_data 
@@ -129,7 +187,7 @@ module LLVM
   attach_function :store_size_of_type, :LLVMStoreSizeOfType, [OpaqueTargetData, :pointer], :ulong_long
   
   # Computes the ABI size of a type in bytes for a target.
-  #     See the method llvm::TargetData::getTypeAllocSize.
+  #     See the method llvm::DataLayout::getTypeAllocSize.
   # 
   # @method abi_size_of_type(opaque_target_data, type_ref)
   # @param [OpaqueTargetData] opaque_target_data 
@@ -139,7 +197,7 @@ module LLVM
   attach_function :abi_size_of_type, :LLVMABISizeOfType, [OpaqueTargetData, :pointer], :ulong_long
   
   # Computes the ABI alignment of a type in bytes for a target.
-  #     See the method llvm::TargetData::getTypeABISize.
+  #     See the method llvm::DataLayout::getTypeABISize.
   # 
   # @method abi_alignment_of_type(opaque_target_data, type_ref)
   # @param [OpaqueTargetData] opaque_target_data 
@@ -149,7 +207,7 @@ module LLVM
   attach_function :abi_alignment_of_type, :LLVMABIAlignmentOfType, [OpaqueTargetData, :pointer], :uint
   
   # Computes the call frame alignment of a type in bytes for a target.
-  #     See the method llvm::TargetData::getTypeABISize.
+  #     See the method llvm::DataLayout::getTypeABISize.
   # 
   # @method call_frame_alignment_of_type(opaque_target_data, type_ref)
   # @param [OpaqueTargetData] opaque_target_data 
@@ -159,7 +217,7 @@ module LLVM
   attach_function :call_frame_alignment_of_type, :LLVMCallFrameAlignmentOfType, [OpaqueTargetData, :pointer], :uint
   
   # Computes the preferred alignment of a type in bytes for a target.
-  #     See the method llvm::TargetData::getTypeABISize.
+  #     See the method llvm::DataLayout::getTypeABISize.
   # 
   # @method preferred_alignment_of_type(opaque_target_data, type_ref)
   # @param [OpaqueTargetData] opaque_target_data 
@@ -169,7 +227,7 @@ module LLVM
   attach_function :preferred_alignment_of_type, :LLVMPreferredAlignmentOfType, [OpaqueTargetData, :pointer], :uint
   
   # Computes the preferred alignment of a global variable in bytes for a target.
-  #     See the method llvm::TargetData::getPreferredAlignment.
+  #     See the method llvm::DataLayout::getPreferredAlignment.
   # 
   # @method preferred_alignment_of_global(opaque_target_data, global_var)
   # @param [OpaqueTargetData] opaque_target_data 
@@ -201,7 +259,7 @@ module LLVM
   attach_function :offset_of_element, :LLVMOffsetOfElement, [OpaqueTargetData, :pointer, :uint], :ulong_long
   
   # Deallocates a TargetData.
-  #     See the destructor llvm::TargetData::~TargetData.
+  #     See the destructor llvm::DataLayout::~DataLayout.
   # 
   # @method dispose_target_data(opaque_target_data)
   # @param [OpaqueTargetData] opaque_target_data 

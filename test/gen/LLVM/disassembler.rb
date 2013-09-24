@@ -4,7 +4,7 @@ require 'ffi'
 
 module LLVM
   extend FFI::Library
-  ffi_lib 'LLVM-3.0'
+  ffi_lib "LLVM-3.4"
   
   DISASSEMBLER_VARIANT_KIND_NONE = 0
   
@@ -23,6 +23,12 @@ module LLVM
   DISASSEMBLER_REFERENCE_TYPE_OUT_LIT_POOL_SYM_ADDR = 2
   
   DISASSEMBLER_REFERENCE_TYPE_OUT_LIT_POOL_CSTR_ADDR = 3
+  
+  DISASSEMBLER_OPTION_USE_MARKUP = 1
+  
+  DISASSEMBLER_OPTION_PRINT_IMM_HEX = 2
+  
+  DISASSEMBLER_OPTION_ASM_PRINTER_VARIANT = 4
   
   # The type for the operand information call back function.  This is called to
   # get the symbolic information for an operand of an instruction.  Typically
@@ -50,7 +56,7 @@ module LLVM
   # @param [FFI::Pointer(*Void)] tag_buf 
   # @return [FFI::Pointer(*Void)] 
   # @scope class
-  callback :op_info_callback, [:ulong, :ulong, :ulong, :int, :pointer], :pointer
+  callback :op_info_callback, [:ulong_long, :ulong_long, :ulong_long, :int, :pointer], :pointer
   
   # The initial support in LLVM MC for the most general form of a relocatable
   # expression is "AddSymbol - SubtractSymbol + Offset".  For some Darwin targets
@@ -79,9 +85,9 @@ module LLVM
   # :value ::
   #   (Integer) symbol value if name is NULL
   class OpInfoSymbol1 < FFI::Struct
-    layout :present, :ulong,
+    layout :present, :ulong_long,
            :name, :string,
-           :value, :ulong
+           :value, :ulong_long
   end
   
   # symbol value if name is NULL
@@ -98,8 +104,8 @@ module LLVM
   class OpInfo1 < FFI::Struct
     layout :add_symbol, OpInfoSymbol1.by_value,
            :subtract_symbol, OpInfoSymbol1.by_value,
-           :value, :ulong,
-           :variant_kind, :ulong
+           :value, :ulong_long,
+           :variant_kind, :ulong_long
   end
   
   # The type for the symbol lookup function.  This may be called by the
@@ -122,13 +128,14 @@ module LLVM
   # @param [FFI::Pointer(**Char_S)] reference_name 
   # @return [FFI::Pointer(*Void)] 
   # @scope class
-  callback :symbol_lookup_callback, [:ulong, :pointer, :ulong, :pointer], :pointer
+  callback :symbol_lookup_callback, [:ulong_long, :pointer, :ulong_long, :pointer], :pointer
   
   # Create a disassembler for the TripleName.  Symbolic disassembly is supported
   # by passing a block of information in the DisInfo parameter and specifying the
   # TagType and callback functions as described above.  These can all be passed
   # as NULL.  If successful, this returns a disassembler context.  If not, it
-  # returns NULL.
+  # returns NULL. This function is equivalent to calling LLVMCreateDisasmCPU()
+  # with an empty CPU name.
   # 
   # @method create_disasm(triple_name, dis_info, tag_type, get_op_info, symbol_look_up)
   # @param [String] triple_name 
@@ -139,6 +146,33 @@ module LLVM
   # @return [FFI::Pointer(DisasmContextRef)] 
   # @scope class
   attach_function :create_disasm, :LLVMCreateDisasm, [:string, :pointer, :int, :op_info_callback, :symbol_lookup_callback], :pointer
+  
+  # Create a disassembler for the TripleName and a specific CPU.  Symbolic
+  # disassembly is supported by passing a block of information in the DisInfo
+  # parameter and specifying the TagType and callback functions as described
+  # above.  These can all be passed * as NULL.  If successful, this returns a
+  # disassembler context.  If not, it returns NULL.
+  # 
+  # @method create_disasm_cpu(triple, cpu, dis_info, tag_type, get_op_info, symbol_look_up)
+  # @param [String] triple 
+  # @param [String] cpu 
+  # @param [FFI::Pointer(*Void)] dis_info 
+  # @param [Integer] tag_type 
+  # @param [Proc(_callback_op_info_callback_)] get_op_info 
+  # @param [Proc(_callback_symbol_lookup_callback_)] symbol_look_up 
+  # @return [FFI::Pointer(DisasmContextRef)] 
+  # @scope class
+  attach_function :create_disasm_cpu, :LLVMCreateDisasmCPU, [:string, :string, :pointer, :int, :op_info_callback, :symbol_lookup_callback], :pointer
+  
+  # Set the disassembler's options.  Returns 1 if it can set the Options and 0
+  # otherwise.
+  # 
+  # @method set_disasm_options(dc, options)
+  # @param [FFI::Pointer(DisasmContextRef)] dc 
+  # @param [Integer] options 
+  # @return [Integer] 
+  # @scope class
+  attach_function :set_disasm_options, :LLVMSetDisasmOptions, [:pointer, :ulong_long], :int
   
   # Dispose of a disassembler context.
   # 
@@ -166,6 +200,6 @@ module LLVM
   # @param [Integer] out_string_size 
   # @return [Integer] 
   # @scope class
-  attach_function :disasm_instruction, :LLVMDisasmInstruction, [:pointer, :pointer, :ulong, :ulong, :string, :ulong], :ulong
+  attach_function :disasm_instruction, :LLVMDisasmInstruction, [:pointer, :pointer, :ulong_long, :ulong_long, :string, :uint], :uint
   
 end
