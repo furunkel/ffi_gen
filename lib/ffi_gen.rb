@@ -453,7 +453,9 @@ class FFIGen
       until struct_children.empty?
         nested_declaration = [:struct_decl, :union_decl].include?(struct_children.first[:kind]) ? struct_children.shift : nil
         field = struct_children.shift
-        raise if field[:kind] != :field_decl
+
+        next if field[:kind] == :unexposed_attr
+        raise "Invalid field kind `#{field[:kind]}'" if field[:kind] != :field_decl
         
         field_name = Clang.get_cursor_spelling(field).to_s_and_dispose
         field_extent = Clang.get_cursor_extent field
