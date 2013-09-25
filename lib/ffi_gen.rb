@@ -312,6 +312,7 @@ class FFIGen
     @headers       = options[:headers] or fail "No headers given."
     @cflags        = options.fetch :cflags, []
     @prefixes      = options.fetch :prefixes, []
+    @suffixes      = options.fetch :suffixes, []
     @blacklist     = options.fetch :blacklist, []
     @blocking      = options.fetch :blocking, []
     @ffi_lib_flags = options.fetch :ffi_lib_flags, nil
@@ -633,6 +634,7 @@ class FFIGen
   def to_ruby_lowercase(str, avoid_keywords = false)
     str = str.dup
     str.sub! /^(#{@prefixes.join('|')})/, '' # remove prefixes
+    str.sub! /(#{@suffixes.join('|')})$/, '' # remove suffixes
     str.gsub! /([A-Z][a-z])/, '_\1' # add underscores before word beginnings
     str.gsub! /([a-z])([A-Z])/, '\1_\2' # add underscores after word endings
     str.sub! /^_*/, '' # remove underscores at the beginning
@@ -646,6 +648,7 @@ class FFIGen
   def to_ruby_camelcase(str)
     str = str.dup
     str.sub! /^(#{@prefixes.join('|')})/, '' # remove prefixes
+    str.sub! /(#{@suffixes.join('|')})$/, '' # remove suffixes
     str.gsub!(/(^|_)[a-z]/) { |match| match.upcase } # make word beginnings upcased
     str.gsub! '_', '' # remove all underscores
     str
