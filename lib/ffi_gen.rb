@@ -161,7 +161,7 @@ class FFIGen
       writer.puts "class #{ruby_name} < #{@is_union ? 'FFI::Union' : 'FFI::Struct'}"
       writer.indent do
         writer.write_array @fields, ",", "layout ", "       " do |field|
-          "#{field[:symbol]}, #{field[:type_data][:ffi_type]}"
+          "#{field[:symbol]}, #{field[:type_data][:ffi_type]}, #{field[:offset]}"
         end
       end
       writer.puts "end", ""
@@ -445,7 +445,8 @@ class FFIGen
       end
       
     when :struct_decl, :union_decl
-      struct = @declarations.delete(Clang.get_cursor_type(declaration)) || StructOrUnion.new(self, name, (declaration[:kind] == :union_decl))
+      type = Clang.get_cursor_type(declaration)
+      struct = @declarations.delete(type) || StructOrUnion.new(self, name, (declaration[:kind] == :union_decl))
       raise if not struct.fields.empty?
       struct.comment << "\n#{comment}"
       
@@ -460,7 +461,7 @@ class FFIGen
         
         field_name = Clang.get_cursor_spelling(field).to_s_and_dispose
         field_extent = Clang.get_cursor_extent field
-        
+        field_offset = Clang.type_get_offset_of(type, field_name) / 8
         field_comment_range = Clang.get_range previous_field_end, Clang.get_range_start(field_extent)
         field_comment = extract_comment translation_unit, field_comment_range
         
@@ -482,7 +483,7 @@ class FFIGen
         end
         
         field_type = Clang.get_cursor_type field
-        struct.fields << { name: field_name, type: field_type, comment: field_comment }
+        struct.fields << { name: field_name, type: field_type, offset: field_offset, comment: field_comment }
       end
       
       @declarations[Clang.get_cursor_type(declaration)] = struct
