@@ -127,7 +127,7 @@ class FFIGen
   end
   
   class StructOrUnion
-    attr_accessor :name, :comment
+    attr_accessor :name, :comment, :size
     attr_reader :fields, :written
     
     def initialize(generator, name, is_union)
@@ -161,8 +161,12 @@ class FFIGen
       writer.puts "class #{ruby_name} < #{@is_union ? 'FFI::Union' : 'FFI::Struct'}"
       writer.indent do
         writer.write_array @fields, ",", "layout ", "       " do |field|
-          "#{field[:symbol]}, #{field[:type_data][:ffi_type]}, #{field[:offset]}"
+          "#{field[:symbol]}, #{field[:type_data][:ffi_type]}#{field[:offset] >= 0 ? ", #{field[:offset]}" : ""}"
         end
+        writer.puts ""
+        writer.puts "def self.size"
+        writer.indent { writer.puts size }
+        writer.puts "end"
       end
       writer.puts "end", ""
       
@@ -449,7 +453,8 @@ class FFIGen
       struct = @declarations.delete(type) || StructOrUnion.new(self, name, (declaration[:kind] == :union_decl))
       raise if not struct.fields.empty?
       struct.comment << "\n#{comment}"
-      
+     
+      struct.size = Clang.type_get_size_of type 
       struct_children = Clang.get_children declaration
       previous_field_end = Clang.get_cursor_location declaration
       until struct_children.empty?
