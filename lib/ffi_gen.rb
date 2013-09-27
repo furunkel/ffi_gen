@@ -179,8 +179,8 @@ class FFIGen
   end
   
   class FunctionOrCallback
-    attr_reader :name, :parameters, :comment
-    attr_accessor :return_type
+    attr_reader :name, :comment
+    attr_accessor :return_type, :parameters
     
     def initialize(generator, name, is_callback, blocking, comment)
       @generator = generator
@@ -507,20 +507,24 @@ class FFIGen
     
     when :typedef_decl
       typedef_children = Clang.get_children declaration
-      if typedef_children.size == 1
+
+      canonical_type = Clang.get_canonical_type Clang.get_cursor_type(declaration)
+      pointee_type = Clang.get_pointee_type(canonical_type)
+
+      case pointee_type[:kind]
+      when :function_proto
+        callback = FunctionOrCallback.new self, name, true, false, comment
+        callback.return_type = Clang.get_result_type pointee_type
+        callback.parameters = Array.new(Clang.get_num_arg_types pointee_type) do |i|
+
+          param_name = Clang.get_cursor_spelling(typedef_children[i]).to_s_and_dispose
+          param_type = Clang.get_arg_type(pointee_type, i)
+          {:name => param_name, :type => param_type}
+        end
+        @declarations[Clang.get_cursor_type(declaration)] = callback
+      else
         child_declaration = @declarations[Clang.get_cursor_type(typedef_children.first)]
         child_declaration.name ||= name if child_declaration
-        
-      elsif typedef_children.size > 1
-        callback = FunctionOrCallback.new self, name, true, false, comment
-        callback.return_type = Clang.get_cursor_type typedef_children.first
-        @declarations[Clang.get_cursor_type(declaration)] = callback
-        
-        typedef_children[1..-1].each do |param_decl|
-          param_name = Clang.get_cursor_spelling(param_decl).to_s_and_dispose
-          param_type = Clang.get_cursor_type param_decl
-          callback.parameters << { name: param_name, type: param_type }
-        end
       end
         
     when :macro_definition
